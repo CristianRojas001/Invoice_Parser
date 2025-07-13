@@ -1,0 +1,1221 @@
+{
+  "name": "invoice workflow V1.3",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1zcyGz-lrqoYU5IP1ciqCwKEZgVrvIFWv",
+          "mode": "list",
+          "cachedResultName": "test automation",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1zcyGz-lrqoYU5IP1ciqCwKEZgVrvIFWv"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -140,
+        560
+      ],
+      "id": "61fa13c9-26ae-4173-98e7-b29f5ed96979",
+      "name": "Google Drive Trigger",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "T99ZTPWfDXkiJ987",
+          "name": "Google Drive account 3"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "application/pdf",
+              "drawingsToFormat": "application/pdf",
+              "slidesToFormat": "application/pdf",
+              "sheetsToFormat": "application/pdf"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        100,
+        500
+      ],
+      "id": "7e245fb6-86cd-4b57-a8ec-26fced889b1c",
+      "name": "Download Binary",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "T99ZTPWfDXkiJ987",
+          "name": "Google Drive account 3"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "validate_file_type",
+              "leftValue": "={{ $json.mimeType }}",
+              "rightValue": "application/pdf",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        320,
+        500
+      ],
+      "id": "08474d91-ca0f-47a0-b529-7b95df1b1779",
+      "name": "Validate File Type"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "validate_text_extracted",
+              "leftValue": "={{ $json.text ? $json.text.trim().length : 0 }}",
+              "rightValue": 10,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        760,
+        440
+      ],
+      "id": "1e68a405-dacc-40f4-b827-bf37ac7e11ac",
+      "name": "Validate Text Extraction"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "Invoice Number",
+              "description": "The number of the invoice",
+              "required": true
+            },
+            {
+              "name": "Client Name",
+              "description": "the name of the client",
+              "required": true
+            },
+            {
+              "name": "Client Email",
+              "description": "the email of the client",
+              "required": true
+            },
+            {
+              "name": "Client Address",
+              "description": "the address of the client",
+              "required": true
+            },
+            {
+              "name": "Client Phone",
+              "description": "the phone number of the client",
+              "required": true
+            },
+            {
+              "name": "Total Amount",
+              "description": "the total amount of the invoice",
+              "required": true
+            },
+            {
+              "name": "Invoice Date",
+              "type": "date",
+              "description": "the date the invoice was sent",
+              "required": true
+            },
+            {
+              "name": "Due Date",
+              "type": "date",
+              "description": "the date the invoice is due",
+              "required": true
+            }
+          ]
+        },
+        "options": {
+          "systemPromptTemplate": "You are an expert extraction algorithm.\nOnly extract relevant information from the text.\nIf you do not know the value of an attribute asked to extract, you may omit the attribute's value.\nEnsure dates are in YYYY-MM-DD format.\nEnsure amounts are numeric values only."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1,
+      "position": [
+        1080,
+        80
+      ],
+      "id": "4055a4bb-611a-4a38-9f5e-f65639433079",
+      "name": "Information Extractor",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1180,
+        320
+      ],
+      "id": "9058fe68-7330-4275-8f1f-dd55d7fb7323",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "nDq5uZNgAPkjuW6x",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "validate_invoice_number",
+              "leftValue": "={{ $json.output['Invoice Number'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            },
+            {
+              "id": "validate_client_name",
+              "leftValue": "={{ $json.output['Client Name'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            },
+            {
+              "id": "validate_total_amount",
+              "leftValue": "={{ $json.output['Total Amount'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2140,
+        240
+      ],
+      "id": "37e6c1e9-005f-45b9-8bbd-7cad52be712f",
+      "name": "Validate Extracted Data"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "13i7c5_6esOT5BlrBcPNXoICMYsefCaMzil6r5PbVleM",
+          "mode": "list",
+          "cachedResultName": "n8n test tasks",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13i7c5_6esOT5BlrBcPNXoICMYsefCaMzil6r5PbVleM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13i7c5_6esOT5BlrBcPNXoICMYsefCaMzil6r5PbVleM/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Task Name": "={{ $json.output['Invoice Number'] }}",
+            "Task Description": "={{ $json.output['Client Name'] }}",
+            "Task Due Date": "={{ $json.output['Client Email'] }}",
+            "task priority": "={{ $json.output['Client Phone'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Task Name",
+              "displayName": "Task Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Task Description",
+              "displayName": "Task Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Task Due Date",
+              "displayName": "Task Due Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "task priority",
+              "displayName": "task priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2360,
+        100
+      ],
+      "id": "671e3bb4-93d7-46f5-8092-45bed41c240a",
+      "name": "Update DB",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "GG4Knv31p2dPLdLs",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Invoice Number: {{ $json['Invoice Number'] }}\n\nClient Name: {{ $json['Client Name'] }}\n\nClient Email: {{ $json['Client Email'] }}\n\nTotal Amount: {{ $json['Total Amount'] }}\n\nInvoice Date: {{ $json['Invoice Date'] }}\n\nDue Date: {{ $json['Due Date'] }}"
+            },
+            {
+              "content": "=# Overview\nYou are an email expert for Green Grass Corp named Greenie. You will receive invoice information. Your job is to notify the internal billing team that an invoice was received/sent.\n\n## Email\nInform the billing team of the invoice. Let them know we have also updated this in the Invoice Database, and they can view it here: https://docs.google.com/spreadsheets/d/14FtgVUjy0tw4EQOB2T8wuCYOe6CELtt3UTjn-GsuDWY/edit?gid=0#gid=0\n\n## Output\nOutput the following parameters separately:\nSubject\nEmail",
+              "role": "system"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        2580,
+        100
+      ],
+      "id": "e792ed55-df10-45e7-8a9f-17504a782453",
+      "name": "Create Email",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "credentials": {
+        "openAiApi": {
+          "id": "eObRBOQuEeU8yp2W",
+          "name": "OpenAi account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "sendTo": "cristianjrojas001@gmail.com",
+        "subject": "={{ $json.message?.content?.Subject || 'Invoice Processing - Subject Generation Failed' }}",
+        "emailType": "text",
+        "message": "={{ $json.message?.content?.Email || 'An invoice was processed but email generation failed. Please check the database for details.' }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        3060,
+        100
+      ],
+      "id": "72090024-2551-4830-9275-9e08aa193f49",
+      "name": "Send Email",
+      "webhookId": "da2aa524-25e5-47e2-bd1a-fe7a97edf8a7",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "AgEgA9qcMLW6WfnF",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        3260,
+        100
+      ],
+      "id": "4d4718b7-b065-400f-8131-e6b28e3e092c",
+      "name": "Success End"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "13i7c5_6esOT5BlrBcPNXoICMYsefCaMzil6r5PbVleM",
+          "mode": "list",
+          "cachedResultName": "n8n test tasks",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13i7c5_6esOT5BlrBcPNXoICMYsefCaMzil6r5PbVleM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13i7c5_6esOT5BlrBcPNXoICMYsefCaMzil6r5PbVleM/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false,
+          "values": {
+            "Error_Type": "General Processing Error",
+            "File_Name": "={{ $('Download Binary').item.json.name || 'Unknown' }}",
+            "Error_Message": "={{ $json.message || 'Unknown error occurred' }}",
+            "Error_Details": "={{ JSON.stringify($json) }}",
+            "Timestamp": "={{ $now }}",
+            "Status": "Failed"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2680,
+        700
+      ],
+      "id": "c2079452-8a1f-426e-a64b-e5b985c21028",
+      "name": "Log General Error",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "GG4Knv31p2dPLdLs",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "cristianjrojas001@gmail.com",
+        "subject": "={{ $json.error }}",
+        "emailType": "text",
+        "message": "An error occurred while processing an invoice:\n\nFile: {{ $('Download Binary').item.json.name || 'Unknown' }}\nError: {{ $json.Error_Message || 'Unknown error' }}\nTimestamp: {{ $now }}\n\nPlease check the error log for more details.",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2880,
+        700
+      ],
+      "id": "54febac6-cc99-4205-8c65-ea93581bb52d",
+      "name": "Send Error Notification",
+      "webhookId": "e9063293-fac9-4e37-a154-0a6da32ae1a5",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "AgEgA9qcMLW6WfnF",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        3280,
+        700
+      ],
+      "id": "aa24a500-b4ec-4b9e-b8cf-8e692f1daa4b",
+      "name": "Error End"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1960,
+        240
+      ],
+      "id": "a801950e-d511-4f70-a183-152e90c028ad",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "sendTo": "billing@example.com",
+        "subject": "={{ $json.message?.content?.Subject || 'Invoice Processing - Subject Generation Failed' }}",
+        "emailType": "text",
+        "message": "={{ $json.message?.content?.Email || 'An invoice was processed but email generation failed. Please check the database for details.' }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        3060,
+        360
+      ],
+      "id": "6916f9e8-89f7-4e46-8819-960d48208893",
+      "name": "Send Email1",
+      "webhookId": "da2aa524-25e5-47e2-bd1a-fe7a97edf8a7",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "AgEgA9qcMLW6WfnF",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1600,
+        400
+      ],
+      "id": "bc6fdf89-b1e6-4b34-b803-da4b136cbefb",
+      "name": "Fall-Back OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "eObRBOQuEeU8yp2W",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        3280,
+        360
+      ],
+      "id": "fe5c62f4-abcb-491b-8539-233685805cd7",
+      "name": "Success With Template Email"
+    },
+    {
+      "parameters": {
+        "content": "## Fall Back path\n**If Gemini fails after 3 retries, the error output falls back to Open AI and the flow continues** ",
+        "height": 980,
+        "width": 440,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1420,
+        0
+      ],
+      "id": "d9a9d676-9f47-44a0-9c86-e4ed954d82e6",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Fall Back Exit\n**If Open AI can't craft the email after 3 tries, it falls back to sending an email with a template** ",
+        "height": 260,
+        "width": 540,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2920,
+        260
+      ],
+      "id": "95d0230d-f4fe-4301-97c8-b5c4e978edff",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "##                              Error logging\n",
+        "height": 440,
+        "width": 1580,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1880,
+        540
+      ],
+      "id": "d2468bc4-b489-43d4-8271-43d970cb4536",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## TXT extraction and Validation\n",
+        "height": 980,
+        "width": 940
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        40,
+        0
+      ],
+      "id": "228baf3f-7fbe-4a05-b744-bc166dfb8ac3",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "Invoice Number",
+              "description": "The number of the invoice",
+              "required": true
+            },
+            {
+              "name": "Client Name",
+              "description": "the name of the client",
+              "required": true
+            },
+            {
+              "name": "Client Email",
+              "description": "the email of the client",
+              "required": true
+            },
+            {
+              "name": "Client Address",
+              "description": "the address of the client",
+              "required": true
+            },
+            {
+              "name": "Client Phone",
+              "description": "the phone number of the client",
+              "required": true
+            },
+            {
+              "name": "Total Amount",
+              "description": "the total amount of the invoice",
+              "required": true
+            },
+            {
+              "name": "Invoice Date",
+              "type": "date",
+              "description": "the date the invoice was sent",
+              "required": true
+            },
+            {
+              "name": "Due Date",
+              "type": "date",
+              "description": "the date the invoice is due",
+              "required": true
+            }
+          ]
+        },
+        "options": {
+          "systemPromptTemplate": "You are an expert extraction algorithm.\nOnly extract relevant information from the text.\nIf you do not know the value of an attribute asked to extract, you may omit the attribute's value.\nEnsure dates are in YYYY-MM-DD format.\nEnsure amounts are numeric values only."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        260
+      ],
+      "id": "d5c501db-5746-49e1-998b-62af695ecb1e",
+      "name": "Fall Back Information Extractor",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "content": "## Validates and Append to DB\n",
+        "height": 520,
+        "width": 640
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1880,
+        0
+      ],
+      "id": "5e4256a2-8fcf-41dc-9764-6321194dbc2c",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## Customized Email\n",
+        "height": 520,
+        "width": 360
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2540,
+        0
+      ],
+      "id": "050396a0-9358-4f0f-9e15-92cb9a1ed6e0",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "## Retrieves desired information form txt \n",
+        "height": 980,
+        "width": 400
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        0
+      ],
+      "id": "0b3ace55-776f-4b03-b868-e01b5a12c814",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "## Desired Exit\n",
+        "height": 240,
+        "width": 540
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2920,
+        0
+      ],
+      "id": "65b439e7-4b00-49b9-b24b-88d5842d6a5e",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "## Tigger on new File\n",
+        "height": 980
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -220,
+        0
+      ],
+      "id": "d869409e-347a-40f4-a467-705f1932ab82",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        540,
+        440
+      ],
+      "id": "e6e3601f-83fe-4de1-afdf-9f7fd4df8573",
+      "name": "Extract from PDF"
+    },
+    {
+      "parameters": {
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "value": "U08UZ8VG4TD",
+          "mode": "list",
+          "cachedResultName": "cristianjrojas"
+        },
+        "text": "to be fill",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        3080,
+        700
+      ],
+      "id": "e4cb8bac-dcaa-44f6-8575-7ddd14d91ac0",
+      "name": "Send a message",
+      "webhookId": "f07194a7-1abb-4f67-9539-0d7e59a08ed0",
+      "credentials": {
+        "slackApi": {
+          "id": "39e9cSRc5ckQPIf4",
+          "name": "Slack account 5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 6
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2500,
+        640
+      ],
+      "id": "7c7fdbf8-022d-4e74-aaf3-31c90185af34",
+      "name": "Merge Errors"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        580
+      ],
+      "id": "f6667903-604b-4f7d-a7c0-aff15e033d80",
+      "name": "AI Agent",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1600,
+        840
+      ],
+      "id": "ec86e755-7eb1-4462-b2a6-821b0a5e7f49",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "eObRBOQuEeU8yp2W",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download Binary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Errors",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "Download Binary": {
+      "main": [
+        [
+          {
+            "node": "Validate File Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate File Type": {
+      "main": [
+        [
+          {
+            "node": "Extract from PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Errors",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Validate Text Extraction": {
+      "main": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Information Extractor": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fall Back Information Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Extracted Data": {
+      "main": [
+        [
+          {
+            "node": "Update DB",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Errors",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Update DB": {
+      "main": [
+        [
+          {
+            "node": "Create Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Errors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Email": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
+      "main": [
+        [
+          {
+            "node": "Success End",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log General Error": {
+      "main": [
+        [
+          {
+            "node": "Send Error Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Error Notification": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Validate Extracted Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email1": {
+      "main": [
+        [
+          {
+            "node": "Success With Template Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fall-Back OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Fall Back Information Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fall Back Information Extractor": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Merge Errors",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Extract from PDF": {
+      "main": [
+        [
+          {
+            "node": "Validate Text Extraction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Error End",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Errors": {
+      "main": [
+        [
+          {
+            "node": "Log General Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ],
+        [
+          {
+            "node": "Merge Errors",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ec7d1164-c0af-480a-8b36-3ac527c40637",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6552087cf0b11b57fb371fc42d904baceb47323a60869dea3c766dca388ef8e2"
+  },
+  "id": "IAIJiAzHGszD3H2e",
+  "tags": []
+}
