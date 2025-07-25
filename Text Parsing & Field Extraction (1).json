@@ -1,0 +1,567 @@
+{
+  "name": "Text Parsing & Field Extraction",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Fallback Extraction (OpenAI)\nRuns only if primary extractor fails.\nSame schema & rules; keeps flow alive.\n",
+        "height": 560,
+        "width": 400,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        300,
+        280
+      ],
+      "id": "e52a993d-2328-4c05-9423-73cbe8ee502a",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Primary Extraction (Gemini)\nLLM extracts required invoice fields.\nDates → YYYY-MM-DD, amounts numeric.\nRetries 2× before failing to fallback.\n",
+        "height": 540,
+        "width": 380,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -100,
+        60
+      ],
+      "id": "fe27685e-80a6-4252-a716-12f6288a9362",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "## Subflow Entry\nReceives parsed text item from caller (passthrough).\n\n\n",
+        "height": 540,
+        "width": 300,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -740,
+        60
+      ],
+      "id": "98e01daa-2165-4196-b0c3-820590130af6",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -600,
+        240
+      ],
+      "id": "592c1e3f-c251-4e76-aa45-357e5b07174f",
+      "name": "01_TRG_TextParse_SubflowEntry"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "validate_text_extracted",
+              "leftValue": "={{ $json.text ? $json.text.trim().length : 0 }}",
+              "rightValue": 10,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        240
+      ],
+      "id": "e8e7eca2-7ec2-4619-a5d0-b960b22c55a8",
+      "name": "02_VAL_TextPresent"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "Invoice Number",
+              "description": "The number of the invoice",
+              "required": true
+            },
+            {
+              "name": "Client Name",
+              "description": "the name of the client",
+              "required": true
+            },
+            {
+              "name": "Client Email",
+              "description": "the email of the client",
+              "required": true
+            },
+            {
+              "name": "Client Address",
+              "description": "the address of the client",
+              "required": true
+            },
+            {
+              "name": "Client Phone",
+              "description": "the phone number of the client",
+              "required": true
+            },
+            {
+              "name": "Total Amount",
+              "type": "number",
+              "description": "the total amount of the invoice",
+              "required": true
+            },
+            {
+              "name": "Invoice Date",
+              "type": "date",
+              "description": "the date the invoice was sent",
+              "required": true
+            },
+            {
+              "name": "Due Date",
+              "type": "date",
+              "description": "the date the invoice is due",
+              "required": true
+            }
+          ]
+        },
+        "options": {
+          "systemPromptTemplate": "You are an expert extraction algorithm.\nOnly extract relevant information from the text.\nIf you do not know the value of an attribute asked to extract, you may omit the attribute's value.\nEnsure dates are in YYYY-MM-DD format.\nEnsure amounts are numeric values only."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        220
+      ],
+      "id": "1233e76a-2d20-431a-a6f2-e0d391106e79",
+      "name": "03_PARSE_AI_Extract_Primary",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        40,
+        440
+      ],
+      "id": "a2d35ddd-fd61-40c3-90a9-47a2d59ed545",
+      "name": "03A_LLM_Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "nDq5uZNgAPkjuW6x",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        460,
+        640
+      ],
+      "id": "1d64480c-885e-4c92-92a1-3f9d1d219037",
+      "name": "03B_LLM_OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "eObRBOQuEeU8yp2W",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "Invoice Number",
+              "description": "The number of the invoice",
+              "required": true
+            },
+            {
+              "name": "Client Name",
+              "description": "the name of the client",
+              "required": true
+            },
+            {
+              "name": "Client Email",
+              "description": "the email of the client",
+              "required": true
+            },
+            {
+              "name": "Client Address",
+              "description": "the address of the client",
+              "required": true
+            },
+            {
+              "name": "Client Phone",
+              "description": "the phone number of the client",
+              "required": true
+            },
+            {
+              "name": "Total Amount",
+              "type": "number",
+              "description": "the total amount of the invoice",
+              "required": true
+            },
+            {
+              "name": "Invoice Date",
+              "type": "date",
+              "description": "the date the invoice was sent",
+              "required": true
+            },
+            {
+              "name": "Due Date",
+              "type": "date",
+              "description": "the date the invoice is due",
+              "required": true
+            }
+          ]
+        },
+        "options": {
+          "systemPromptTemplate": "You are an expert extraction algorithm.\nOnly extract relevant information from the text.\nIf you do not know the value of an attribute asked to extract, you may omit the attribute's value.\nEnsure dates are in YYYY-MM-DD format.\nEnsure amounts are numeric values only."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1,
+      "position": [
+        360,
+        420
+      ],
+      "id": "a3f8faac-3d79-41b3-9706-7f0ca8440910",
+      "name": "04_PARSE_AI_Extract_Fallback",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        840,
+        220
+      ],
+      "id": "05902bd1-2183-4a5d-8659-9c7ac347b213",
+      "name": "05_MERGE_ExtractorOutputs"
+    },
+    {
+      "parameters": {
+        "jsCode": "// take each item, pull its .output into the top‐level json\nreturn items.map(item => ({\n  json: item.json.output,\n  binary: item.binary, // if you need to pass binary along\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        220
+      ],
+      "id": "fb1f46a8-e40b-40fc-a0a7-dd9b3f58db4c",
+      "name": "06_SET_ResponseContract"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        220
+      ],
+      "id": "b3a1d247-dce6-41b8-8a64-b5dda36ebf51",
+      "name": "07_NOOP_End"
+    },
+    {
+      "parameters": {
+        "errorMessage": "Workflow Text Parsing & Field Extraction: failed validation"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        40,
+        660
+      ],
+      "id": "47ff4d0c-9e86-4faa-9c8b-3a2c6300222d",
+      "name": "ERR_Stop_NoText1",
+      "retryOnFail": false,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "errorMessage": "Sub-Workflow Text Parsing & Field Extraction: failed AI node and fall back AI node"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        680
+      ],
+      "id": "31a57f08-c48e-42b7-b2be-063711e35fd7",
+      "name": "ERR_Stop_AIExtract",
+      "retryOnFail": false,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "content": "## Text Present?\nChecks that extracted text length > 10 chars.\nFAIL → stop & send to error workflow.\n\n\n",
+        "height": 540,
+        "width": 300,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -420,
+        60
+      ],
+      "id": "4ef52331-6973-459a-abe7-d960d4302940",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "content": "## Merge Extractors\nJoin primary/fallback results by position.\nGuarantees a single item continues.\n\n\n\n",
+        "height": 540,
+        "width": 300,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        720,
+        60
+      ],
+      "id": "740da4a8-86eb-49cd-afe5-0d6dc2559aa9",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "content": "## Response Contract\nFlattens `.output` → top-level JSON.\nReturns only the fields main flow expects.\n\nExplicit end node. No operation.\n\n\n",
+        "height": 540,
+        "width": 420,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        60
+      ],
+      "id": "80fc53fa-73ec-4142-afe1-f70e386f0bcd",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "content": "## Stop & Error: No Text\nNo usable text extracted.\nTriggers global Error Workflow, sends full context.\n",
+        "height": 220,
+        "width": 700,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -420,
+        620
+      ],
+      "id": "55b7dc00-cdd6-4149-990d-8293f03c0492",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Stop & Error: AI Extraction\nBoth extractors failed.\nGlobal error handler receives all data & stack.\n\n",
+        "height": 220,
+        "width": 740,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        720,
+        620
+      ],
+      "id": "d20cad22-0742-45fe-8456-0fab936f4b24",
+      "name": "Sticky Note2"
+    }
+  ],
+  "pinData": {
+    "01_TRG_TextParse_SubflowEntry": [
+      {
+        "json": {
+          "numpages": 1,
+          "numrender": 1,
+          "info": {
+            "PDFFormatVersion": "1.3",
+            "Language": null,
+            "EncryptFilterName": null,
+            "IsLinearized": false,
+            "IsAcroFormPresent": false,
+            "IsXFAPresent": false,
+            "IsCollectionPresent": false,
+            "IsSignaturesPresent": false,
+            "Producer": "PyFPDF 1.7.2 http://pyfpdf.googlecode.com/",
+            "CreationDate": "D:20250712155941"
+          },
+          "text": "Green Grass Corp\nOfficial Invoice\nInvoice Number: INV-001\nInvoice Date: 2024-06-10\nDue Date: 2024-06-20\nClient Name: Jane Smith\nClient Email: jane.smith@example.com\nClient Address: 123 Maple Street, Madrid, Spain\nClient Phone: +34 600 123 456\nTotal Amount: EUR145.00\nThank you for your business!",
+          "version": "5.3.31"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "01_TRG_TextParse_SubflowEntry": {
+      "main": [
+        [
+          {
+            "node": "02_VAL_TextPresent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02_VAL_TextPresent": {
+      "main": [
+        [
+          {
+            "node": "03_PARSE_AI_Extract_Primary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ERR_Stop_NoText1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03_PARSE_AI_Extract_Primary": {
+      "main": [
+        [
+          {
+            "node": "05_MERGE_ExtractorOutputs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "04_PARSE_AI_Extract_Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03A_LLM_Gemini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "03_PARSE_AI_Extract_Primary",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03B_LLM_OpenAI": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "04_PARSE_AI_Extract_Fallback",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "04_PARSE_AI_Extract_Fallback": {
+      "main": [
+        [
+          {
+            "node": "05_MERGE_ExtractorOutputs",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "ERR_Stop_AIExtract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05_MERGE_ExtractorOutputs": {
+      "main": [
+        [
+          {
+            "node": "06_SET_ResponseContract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "06_SET_ResponseContract": {
+      "main": [
+        [
+          {
+            "node": "07_NOOP_End",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "245e7f0d-62c9-4a9d-af01-39e62751bed2",
+  "meta": {
+    "instanceId": "6552087cf0b11b57fb371fc42d904baceb47323a60869dea3c766dca388ef8e2"
+  },
+  "id": "UrUAGXkaG9BLJkDl",
+  "tags": []
+}

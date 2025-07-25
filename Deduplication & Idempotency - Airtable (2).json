@@ -1,0 +1,515 @@
+{
+  "name": "Deduplication & Idempotency - Airtable",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1180,
+        100
+      ],
+      "id": "f00952a0-fe55-4097-962f-5d160eebfc87",
+      "name": "01_TRG_Subflow_Entry",
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appIZztH5j7xxzkqz",
+          "mode": "list",
+          "cachedResultName": "Invoice tracker",
+          "cachedResultUrl": "https://airtable.com/appIZztH5j7xxzkqz"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblZxY1V84w5Rq9CA",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/appIZztH5j7xxzkqz/tblZxY1V84w5Rq9CA"
+        },
+        "filterByFormula": "=={{ `({Invoice Number} = '${$json[\"Invoice Number\"]}')` }}\n\n",
+        "returnAll": false,
+        "limit": 1,
+        "options": {}
+      },
+      "id": "bc7d6762-dce6-4d8b-b626-a05203806b47",
+      "name": "02_DB_Airtable_Search",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -900,
+        180
+      ],
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "3uyDU5FEE9yIMo3P",
+          "name": "Airtable Personal Access Token account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -600,
+        100
+      ],
+      "id": "67f540a5-d79a-4141-8aaf-d724f070d25f",
+      "name": "03_MERGE_Input_Search",
+      "alwaysOutputData": false,
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "condition-1",
+              "leftValue": "={{$items(\"02_DB_Airtable_Search\").length}}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "573144b5-c50d-46c7-8477-395a7c80e656",
+      "name": "04_IF_RecordExists",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -360,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "IsDulicated",
+              "type": "booleanValue"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4fff1a9c-915c-4a12-a199-7e197797f11e",
+      "name": "05_SET_DuplicateTrue",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        -100,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "IsDulicated",
+              "type": "booleanValue",
+              "booleanValue": "false"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5576a3d6-0492-4cdf-88a6-b2045bd9e0db",
+      "name": "05B_SET_DuplicateFalse",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        -100,
+        200
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "3f40da75-492f-406c-9ae5-f77789af0e37",
+      "name": "06_MERGE_Response",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        180,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4cc1f8f5-2a2d-4221-a51b-e89e1c810102",
+              "name": "InvoiceNumber",
+              "value": "={{ $json[\"Invoice Number\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "33968e1c-2ecd-48ec-85ae-dd95d81f1565",
+              "name": "ClientName",
+              "value": "={{ $json[\"Client Name\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "e65b7412-cc04-46bc-9d06-386a7ae36fe1",
+              "name": "Client Email",
+              "value": "={{ $json['Client Email'] }}",
+              "type": "string"
+            },
+            {
+              "id": "1219f5a1-ae6f-4988-94cb-a2bfea66d65c",
+              "name": "Client Address",
+              "value": "={{ $json['Client Address'] }}",
+              "type": "string"
+            },
+            {
+              "id": "34dd3570-2393-45fe-a9ce-59b8e7d0de83",
+              "name": "Client Phone",
+              "value": "={{ $json['Client Phone'] }}",
+              "type": "string"
+            },
+            {
+              "id": "a54d7290-ab38-4a71-8adc-cd8ed0e1196e",
+              "name": "Total Amount",
+              "value": "={{ $json['Total Amount'] }}",
+              "type": "string"
+            },
+            {
+              "id": "df336a7e-19d0-477b-a4e7-781e904e675a",
+              "name": "Invoice Date",
+              "value": "={{ $json['Invoice Date'] }}",
+              "type": "string"
+            },
+            {
+              "id": "67fbe40e-d2fe-450d-98d7-1c2a2ef20c4d",
+              "name": "Due Date",
+              "value": "={{ $json['Due Date'] }}",
+              "type": "string"
+            },
+            {
+              "id": "6ace97fe-e06b-4962-9802-d5ef66e45300",
+              "name": "IsDulicated",
+              "value": "={{ $json.IsDulicated }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        420,
+        100
+      ],
+      "id": "3180d694-ced9-408a-aecb-79106d4895fd",
+      "name": "07_SET_ResponseContract"
+    },
+    {
+      "parameters": {
+        "errorMessage": "Workflow Deduplication & Idempotency - Airtable: failed airtable request"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        -640,
+        500
+      ],
+      "id": "3968125d-e53b-41da-8e18-fa37b6f05987",
+      "name": "ERR_Stop_Subflow",
+      "retryOnFail": false,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        660,
+        100
+      ],
+      "id": "c2a26e20-07fe-44dd-a487-0f3913a8a9a3",
+      "name": "NOOP_End"
+    },
+    {
+      "parameters": {
+        "content": "## Stop & Error → Global Handler\nHard-fails here and triggers the global Error Workflow.\nSends full context ($json/$binary, node name, executionId, stack).\nUsed for unrecoverable Airtable errors.\n\n\n\n",
+        "height": 240,
+        "width": 800,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1160,
+        440
+      ],
+      "id": "d9c91b21-e19c-4055-a406-1314d7c59b3c",
+      "name": "Sticky Note11"
+    },
+    {
+      "parameters": {
+        "content": "## Subflow Entry\nReceives JSON from caller (passthrough).\nNo transformation here—just forwards input to search + merge.\n",
+        "height": 540,
+        "width": 300,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1280,
+        -120
+      ],
+      "id": "67b3c506-bb22-45b5-9956-171956f6178b",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "## Airtable Lookup\nSearches by Invoice Number (filterByFormula).\nReturns 0 or 1 record.\nRetries on transient Airtable errors.\n",
+        "height": 540,
+        "width": 260,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -960,
+        -120
+      ],
+      "id": "9c862bb5-a0d2-436f-a0bf-e9dc6988b3f2",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Merge Input & Search\nMode: Merge by position, keep unmatched.\nEnsures we always have ONE item flowing forward\n(even if Airtable returned nothing).\n\n",
+        "height": 540,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -680,
+        -120
+      ],
+      "id": "aa7bbc66-e356-42aa-a742-5d8179079393",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Record Exists?\nChecks if Airtable returned ≥1 item.\nTRUE  → duplicate path\nFALSE → new record path\n",
+        "height": 540,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -420,
+        -120
+      ],
+      "id": "e69f7a4b-02de-46d8-b1d7-58a996a267b0",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Merge Branches\nRejoin duplicate/non-duplicate branches.\nOutput = single unified item for the caller.\n\n\n",
+        "height": 540,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        100,
+        -120
+      ],
+      "id": "63412004-fc3e-4bf9-9b02-f27b9932f928",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## End of Subflow\nNo-op placeholder to make the finish explicit.\n\n",
+        "height": 540,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        620,
+        -120
+      ],
+      "id": "00e2cab1-9c31-45fb-bcf5-568f6794ceee",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "## Response Contract\nShape the payload for the main flow:\n- Flatten key fields (InvoiceNumber, ClientName, etc.)\n- Include IsDulicated boolean\nKeep this stable so callers don’t break.\n\n\n",
+        "height": 540,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        360,
+        -120
+      ],
+      "id": "8be13b11-c6b2-4b84-9e7d-13774db81a3b",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "## Tag Result\nSets IsDulicated flag.\nNo other data changed—just marking the route outcome.\n\n",
+        "height": 540,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        -120
+      ],
+      "id": "865590ea-8bc1-44cd-ad71-9b3218795ca5",
+      "name": "Sticky Note3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "01_TRG_Subflow_Entry": {
+      "main": [
+        [
+          {
+            "node": "02_DB_Airtable_Search",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "03_MERGE_Input_Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02_DB_Airtable_Search": {
+      "main": [
+        [
+          {
+            "node": "03_MERGE_Input_Search",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "ERR_Stop_Subflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03_MERGE_Input_Search": {
+      "main": [
+        [
+          {
+            "node": "04_IF_RecordExists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "04_IF_RecordExists": {
+      "main": [
+        [
+          {
+            "node": "05_SET_DuplicateTrue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "05B_SET_DuplicateFalse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05_SET_DuplicateTrue": {
+      "main": [
+        [
+          {
+            "node": "06_MERGE_Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05B_SET_DuplicateFalse": {
+      "main": [
+        [
+          {
+            "node": "06_MERGE_Response",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "06_MERGE_Response": {
+      "main": [
+        [
+          {
+            "node": "07_SET_ResponseContract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "07_SET_ResponseContract": {
+      "main": [
+        [
+          {
+            "node": "NOOP_End",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "13d2fcba-9786-466e-bf84-03a71c9bdba1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6552087cf0b11b57fb371fc42d904baceb47323a60869dea3c766dca388ef8e2"
+  },
+  "id": "Fcl67QR8kg5X9Z9T",
+  "tags": []
+}

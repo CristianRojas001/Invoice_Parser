@@ -1,0 +1,437 @@
+{
+  "name": "OCR",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Primary OCR Agent\n• Runs OCR + field extraction in one step  \n• Must return ONLY a JSON object (no fences/text)  \n• Retries enabled; on error → fallback path\n\n### LLM Backend (Primary)\nOpenAI model used by the primary OCR agent.\nTune temp/tokens here if needed.",
+        "height": 600,
+        "width": 380,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -100
+      ],
+      "id": "1d7aeb07-229f-4c78-8c0a-512ae8ed81eb",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "content": "## Fallback OCR Agent\nUsed only if primary agent fails.  \nSame schema, strict JSON output, no guessing.\n\n### Vision LLM (Fallback)\nGemini vision model powering fallback OCR.  \nHandles image-heavy PDFs.",
+        "height": 700,
+        "width": 440,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        320,
+        40
+      ],
+      "id": "5222424b-e9a1-482d-b978-f20089125dd7",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Response Contract\nNormalize to:\n{invoiceNumber, clientName, clientEmail, clientAddress, clientPhone, totalAmount, invoiceDate, dueDate}\nNo extras; null if absent.\n\n### Subflow End\nExplicit terminator. No operation.",
+        "height": 600,
+        "width": 480,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        -100
+      ],
+      "id": "9e3698b9-a127-4ae1-9531-f87335c0c1e0",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "content": "## Merge OCR Results\nPrimary OR fallback → 1 item out.  \nMerge by position; keep binary + original json.\n\n\n",
+        "height": 600,
+        "width": 300,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        780,
+        -100
+      ],
+      "id": "2b0b9ebf-43c8-4c2c-b05c-2ab670e54c4e",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Stop & Error: Primary Path\nPrimary OCR failed AND JSON parse failed.  \nTriggers global Error Workflow with full context.\n\n",
+        "height": 220,
+        "width": 880,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        780,
+        520
+      ],
+      "id": "e9ea4bb1-6725-490b-bb3f-8695a91e33df",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -300,
+        120
+      ],
+      "id": "348bc142-a154-47eb-857c-7c65afb87f17",
+      "name": "01_TRG_OCR_SubflowEntry",
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "chatgpt-4o-latest"
+        },
+        "options": {
+          "maxTokens": 1000,
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        60,
+        360
+      ],
+      "id": "cbfa6d4f-74a9-4dd0-a5f1-5a85f56f6151",
+      "name": "02A_LLM_OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "eObRBOQuEeU8yp2W",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.0-pro-vision-latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        500,
+        560
+      ],
+      "id": "a2aadcc9-989d-46ab-bc0d-6dfe0f9c7c88",
+      "name": "04A_LLM_GeminiVision",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "nDq5uZNgAPkjuW6x",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Please process the attached PDF/image and extract the invoice data according to the above instructions. Return a JSON object with keys:\ninvoiceNumber, clientName, clientEmail, clientAddress, clientPhone, totalAmount, invoiceDate, dueDate.\n",
+        "options": {
+          "systemMessage": "You are an invoice extraction agent. You will receive a PDF/image file containing an invoice. \n\nYour job:\n1. Perform OCR on the file to get the exact text.\n2. From that text, extract exactly these fields (in lowerCamelCase), matching the format of the text‑parser:\n\n{\n  \"invoiceNumber\": string | null,\n  \"clientName\": string | null,\n  \"clientEmail\": string | null,\n  \"clientAddress\": string | null,\n  \"clientPhone\": string | null,\n  \"totalAmount\": string | null,   // numeric string, e.g. \"123.45\"\n  \"invoiceDate\": string | null,   // YYYY-MM-DD\n  \"dueDate\": string | null        // YYYY-MM-DD\n}\n\nRules:\n- Do NOT invent or guess any data.  \n- If a field isn’t present or legible, set it to null.  \n- Output only the raw JSON object—no extra text, markdown, or commentary.  \n",
+          "passthroughBinaryImages": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        400,
+        280
+      ],
+      "id": "84e05ce5-8df2-4062-80b2-9801552d2bb7",
+      "name": "02B_OCR_AI_Agent_Fallback",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Extract invoiceNumber, clientName, clientEmail, clientAddress, clientPhone, totalAmount, invoiceDate, and dueDate from the attached file as valid JSON.\n",
+        "options": {
+          "systemMessage": "You are an invoice‑OCR agent. Perform OCR on the attached file, then output *only* a single JSON object exactly matching the provided schema. Do NOT wrap it in code fences or add any extra text.\n\n",
+          "returnIntermediateSteps": true,
+          "passthroughBinaryImages": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -20,
+        120
+      ],
+      "id": "c36ae6cb-5cbc-445a-80be-cd5cdbe534ab",
+      "name": "02A_OCR_AI_Agent_Primary",
+      "retryOnFail": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        900,
+        120
+      ],
+      "id": "0ec0a12d-90fa-4d9f-9da0-b38134c6f402",
+      "name": "03_MERGE_OCR_Outputs"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Code to replace the Structured Output Parser\n// This handles JSON parsing and validation for AI Agent responses\n\nconst parseAndValidateJSON = (text) => {\n  try {\n    // Clean the text - remove markdown code fences and extra whitespace\n    let cleanText = text.trim();\n    \n    // Remove markdown code fences if present\n    cleanText = cleanText.replace(/^```json\\s*/i, '').replace(/```\\s*$/, '');\n    cleanText = cleanText.replace(/^```\\s*/, '').replace(/```\\s*$/, '');\n    \n    // Try to find JSON object if there's extra text\n    const jsonMatch = cleanText.match(/\\{[\\s\\S]*\\}/);\n    if (jsonMatch) {\n      cleanText = jsonMatch[0];\n    }\n    \n    // Parse the JSON\n    const parsed = JSON.parse(cleanText);\n    \n    // Validate and normalize the structure\n    const normalized = {\n      invoiceNumber: parsed.invoiceNumber || null,\n      clientName: parsed.clientName || null,\n      clientEmail: parsed.clientEmail || null,\n      clientAddress: parsed.clientAddress || null,\n      clientPhone: parsed.clientPhone || null,\n      totalAmount: parsed.totalAmount || null,\n      invoiceDate: parsed.invoiceDate || null,\n      dueDate: parsed.dueDate || null\n    };\n    \n    return { success: true, data: normalized, error: null };\n    \n  } catch (error) {\n    return { \n      success: false, \n      data: null, \n      error: `JSON parsing failed: ${error.message}`,\n      originalText: text\n    };\n  }\n};\n\n// Process each item\nreturn items.map(item => {\n  const aiOutput = item.json.output || item.json.text || item.json.response || '';\n  const parseResult = parseAndValidateJSON(aiOutput);\n  \n  if (parseResult.success) {\n    return {\n      json: {\n        output: parseResult.data,\n        parseSuccess: true\n      },\n      binary: item.binary\n    };\n  } else {\n    // Fallback: create null structure with error info\n    return {\n      json: {\n        output: {\n          invoiceNumber: null,\n          clientName: null,\n          clientEmail: null,\n          clientAddress: null,\n          clientPhone: null,\n          totalAmount: null,\n          invoiceDate: null,\n          dueDate: null\n        },\n        parseSuccess: false,\n        parseError: parseResult.error,\n        originalText: parseResult.originalText\n      },\n      binary: item.binary\n    };\n  }\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        120
+      ],
+      "id": "5da01222-1742-46db-914c-bd2cb388004f",
+      "name": "04_PARSE_JSON_FromAgent",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Properly handles merged items and extracts the output\n\nreturn items.map(item => {\n  // Handle different possible data structures from the merge\n  let outputData;\n  \n  if (item.json.output) {\n    // Direct output from parser nodes\n    outputData = item.json.output;\n  } else if (item.json.json && item.json.json.output) {\n    // Nested structure\n    outputData = item.json.json.output;\n  } else if (item.json.data) {\n    // Alternative data structure\n    outputData = item.json.data;\n  } else {\n    // Fallback - use the entire json object if it has the expected fields\n    const hasInvoiceFields = item.json.invoiceNumber !== undefined || \n                            item.json.clientName !== undefined;\n    \n    if (hasInvoiceFields) {\n      outputData = item.json;\n    } else {\n      // Create null structure as fallback\n      outputData = {\n        invoiceNumber: null,\n        clientName: null,\n        clientEmail: null,\n        clientAddress: null,\n        clientPhone: null,\n        totalAmount: null,\n        invoiceDate: null,\n        dueDate: null\n      };\n    }\n  }\n  \n  // Ensure all required fields exist with proper fallbacks\n  const finalOutput = {\n    invoiceNumber: outputData.invoiceNumber || null,\n    clientName: outputData.clientName || null,\n    clientEmail: outputData.clientEmail || null,\n    clientAddress: outputData.clientAddress || null,\n    clientPhone: outputData.clientPhone || null,\n    totalAmount: outputData.totalAmount || null,\n    invoiceDate: outputData.invoiceDate || null,\n    dueDate: outputData.dueDate || null\n  };\n  \n  return {\n    json: finalOutput,\n    binary: item.binary // Preserve binary data if present\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        120
+      ],
+      "id": "b994fa28-8bf2-4847-88ed-33137d5b4b90",
+      "name": "05_SET_ResponseContract"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1700,
+        120
+      ],
+      "id": "05ad08b3-58f6-4db5-a39b-55847cc5c5f1",
+      "name": "06_NOOP_End"
+    },
+    {
+      "parameters": {
+        "errorMessage": "Sub-Workflow OCR: Main and Fall back AI failed"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        580
+      ],
+      "id": "26bbd6c6-2e20-4a56-b559-b008582e5486",
+      "name": "ERR_Stop_OCR_FallbackFail",
+      "retryOnFail": false,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "errorMessage": "Sub-Workflow OCR: Text parser failed"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        580
+      ],
+      "id": "883cccd4-5051-478e-b253-31657b3323ec",
+      "name": "ERR_Stop_ParseFail",
+      "retryOnFail": false,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "content": "## Subflow Entry (OCR)\nReceives binary + metadata from main flow.\nNo mutation—just forwards to OCR agents.\n\n\n\n\n",
+        "height": 600,
+        "width": 300,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        -100
+      ],
+      "id": "161230b0-0513-4886-a7c9-c02e7041873d",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## JSON Clean & Validate\nStrips code fences/extra text, parses JSON.  \nEnsures all keys exist; null when missing.  \nSets parseSuccess + parseError for debugging.\n",
+        "height": 600,
+        "width": 320,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        -100
+      ],
+      "id": "976904b6-9db3-438e-86ef-821b5c1a1287",
+      "name": "Sticky Note4"
+    }
+  ],
+  "pinData": {
+    "01_TRG_OCR_SubflowEntry": [
+      {
+        "json": {
+          "name": "First item",
+          "code": 1
+        }
+      },
+      {
+        "json": {
+          "name": "Second item",
+          "code": 2
+        }
+      }
+    ]
+  },
+  "connections": {
+    "01_TRG_OCR_SubflowEntry": {
+      "main": [
+        [
+          {
+            "node": "02A_OCR_AI_Agent_Primary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02A_LLM_OpenAI": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "02A_OCR_AI_Agent_Primary",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "04A_LLM_GeminiVision": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "02B_OCR_AI_Agent_Fallback",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02B_OCR_AI_Agent_Fallback": {
+      "main": [
+        [
+          {
+            "node": "03_MERGE_OCR_Outputs",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "ERR_Stop_OCR_FallbackFail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02A_OCR_AI_Agent_Primary": {
+      "main": [
+        [
+          {
+            "node": "03_MERGE_OCR_Outputs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "02B_OCR_AI_Agent_Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03_MERGE_OCR_Outputs": {
+      "main": [
+        [
+          {
+            "node": "04_PARSE_JSON_FromAgent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "04_PARSE_JSON_FromAgent": {
+      "main": [
+        [
+          {
+            "node": "05_SET_ResponseContract",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ERR_Stop_ParseFail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05_SET_ResponseContract": {
+      "main": [
+        [
+          {
+            "node": "06_NOOP_End",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f386a330-cf42-469e-93cf-7fad2fe2bdaf",
+  "meta": {
+    "instanceId": "6552087cf0b11b57fb371fc42d904baceb47323a60869dea3c766dca388ef8e2"
+  },
+  "id": "QVff1g7Sdluq3eeN",
+  "tags": []
+}

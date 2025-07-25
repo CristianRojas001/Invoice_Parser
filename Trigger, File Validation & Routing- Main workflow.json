@@ -1,0 +1,996 @@
+{
+  "name": "Trigger, File Validation & Routing",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Trigger & Intake\nWatches GDrive folder for new/converted PDFs.\n• Converts Google Docs/Sheets/Slides to PDF.\n• Hands binary + metadata downstream.",
+        "height": 440,
+        "width": 460,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -280,
+        220
+      ],
+      "id": "beef987d-13c2-4a8d-8d5c-ab45d61c4195",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "content": "## File Validation & Routing\nChecks:\n- True PDF header\n- Size ≤ 10 MB\n- Pages ≤ 6\n- Text vs. image markers\nRoute:\n- toDB → direct parsing\n- toOCR → OCR branch\n",
+        "height": 440,
+        "width": 420,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        200,
+        220
+      ],
+      "id": "9649ed13-cf0d-4ece-8c68-2f09a6d1e77c",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## Fallback Exit / Template Email\nIf LLM errors:\nSend predefined subject/body so ops still get notified.\n",
+        "height": 340,
+        "width": 560,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2700,
+        680
+      ],
+      "id": "f929822f-14d1-48ca-950c-31a9ca912c5d",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Customized Email\nLLM builds subject/body for billing team.\nIf generation fails after retries → fallback template.\n\n",
+        "height": 440,
+        "width": 360,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2320,
+        220
+      ],
+      "id": "38c78734-ce2d-4958-9843-727e9802a315",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "## Desired Exit\n",
+        "height": 440,
+        "width": 560,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2700,
+        220
+      ],
+      "id": "99c13338-ca64-45e7-83d0-7f760e394320",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "## Text Parsing & Field Extraction\nPulls invoice fields from PDF/OCR text.\nOutputs a clean JSON object with all required keys.\n",
+        "height": 400,
+        "width": 440,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        640,
+        60
+      ],
+      "id": "def0c079-8a64-4869-bbbc-375855097076",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## OCR Extraction / Fallback\nOnly runs if PDF is image-only or lacks text.\nOutputs raw text for the same parser as text-PDFs.\n",
+        "height": 400,
+        "width": 440,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        640,
+        480
+      ],
+      "id": "866e5270-ebeb-4544-acbe-c2a846bb21ee",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Merge Parsed Results\nRejoins text-PDF and OCR outputs by position.\nEnsures one unified item continues forward.\n",
+        "height": 440,
+        "width": 220,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        220
+      ],
+      "id": "9a9b6c1b-cbb8-40e2-9b62-6ac608424c2a",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## Data Validation\nFlexible key matching.\nChecks required fields, YYYY-MM-DD dates, numeric Total Amount.\nItems failing → error branch.\n",
+        "height": 440,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1800,
+        220
+      ],
+      "id": "144312d9-60c1-4df4-9b11-63710c5f4e43",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "content": "## Deduplication & Idempotency\nCalls sub-workflow (Airtable lookup).\nReturns:\n- IsDuplicated (boolean)\n- recordId (if existing)\n",
+        "height": 440,
+        "width": 440,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        220
+      ],
+      "id": "399c150c-f203-489e-995c-37d93946ed3a",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "## Airtable Create\nWrites validated, non-duplicate invoices into Airtable.\n",
+        "height": 440,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2060,
+        220
+      ],
+      "id": "b5fdaf4e-0bcc-4ab8-af5a-13d39904f885",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "content": "## Stop & Error → Global Handler\n• Hard-fails execution here.  \n• Triggers the “Error Workflow” (n8n global error handler).  \n• Full context is forwarded: $json, $binary, node name, stack trace, executionId.  \n• That workflow logs/alerts and decides next actions.\n\n\n",
+        "height": 340,
+        "width": 820,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1480,
+        680
+      ],
+      "id": "b92b4087-c74d-4233-8cfa-d71ce821a031",
+      "name": "Sticky Note11"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1zcyGz-lrqoYU5IP1ciqCwKEZgVrvIFWv",
+          "mode": "list",
+          "cachedResultName": "test automation",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1zcyGz-lrqoYU5IP1ciqCwKEZgVrvIFWv"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -220,
+        460
+      ],
+      "id": "fb7518f7-6fab-4852-8ee3-584181d04687",
+      "name": "01_TRG_GDrive_NewFile",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "T99ZTPWfDXkiJ987",
+          "name": "Google Drive account 3"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "application/pdf",
+              "drawingsToFormat": "application/pdf",
+              "slidesToFormat": "application/pdf",
+              "sheetsToFormat": "application/pdf"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        20,
+        460
+      ],
+      "id": "2c48e092-7dfc-42c7-ad3b-7e0872ba3643",
+      "name": "02_IO_GDrive_DownloadPDF",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "T99ZTPWfDXkiJ987",
+          "name": "Google Drive account 3"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "function isPdfHeader(buf) {\n  return buf.slice(0, 5).toString('utf8') === '%PDF-';\n}\n\nconst inputItems = $input.all();\nconst outputItems = [];\n\nfor (let i = 0; i < inputItems.length; i++) {\n  const item = inputItems[i];\n\n  try {\n    let route = 'toDB';\n    let containsText = false;\n    let containsImage = false;\n    let pages = 0;\n    let fileSizeMB;\n\n    // Metadata\n    const mimeType = item.json.mimeType;\n    if (mimeType && mimeType !== 'application/pdf') {\n      throw new Error(`Invalid type: expected PDF but got ${mimeType}`);\n    }\n\n    // Binary\n    const binaryKey = item.binary ? Object.keys(item.binary)[0] : null;\n    if (binaryKey) {\n      const buf       = Buffer.from(item.binary[binaryKey].data, 'base64');\n      const sizeBytes = buf.length;\n      fileSizeMB      = (sizeBytes / 1024 / 1024).toFixed(2);\n\n      if (!isPdfHeader(buf)) {\n        throw new Error('Not a real PDF (bad header)');\n      }\n\n      const raw = buf.toString('latin1');\n\n      // Page count\n      pages = (raw.match(/\\/Type\\s*\\/Page\\b/g) || []).length;\n      if (pages > 6) throw new Error(`PDF has ${pages} pages (max 6 allowed)`);\n\n      // Text vs image\n      const sample    = raw.slice(0, Math.min(raw.length, 2 * 1024 * 1024));\n      const hasFont   = /\\/Font\\b/.test(sample);\n      const hasTextOp = /\\bTj\\b|\\bTJ\\b/.test(sample);\n      containsText    = hasFont || hasTextOp;\n\n      containsImage = /\\/Subtype\\s*\\/Image/.test(sample)\n                   || /\\/DCTDecode/.test(sample)\n                   || /\\/JPXDecode/.test(sample);\n\n      if (!containsText || containsImage) route = 'toOCR';\n    }\n\n    outputItems.push({\n      json: {\n        ...item.json,\n        validFile: true,\n        route,\n        fileSizeMB,\n        pageCount: pages,\n        containsText,\n        containsImage,\n      },\n      binary: item.binary,\n      pairedItem: { item: i },\n    });\n\n  } catch (err) {\n    // Keep the batch going; mark this one as error\n    outputItems.push({\n      json: {\n        ...item.json,\n        error: err.message,\n      },\n      binary: item.binary,\n      pairedItem: { item: i },\n    });\n  }\n}\n\nreturn outputItems;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        460
+      ],
+      "id": "5fa60e60-ccb5-402d-971e-5f7e7473e89e",
+      "name": "03_VAL_PDF_FileGuard"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "validate_file_type",
+              "leftValue": "={{ $json.route }}",
+              "rightValue": "toDB",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        460,
+        460
+      ],
+      "id": "cea0d291-f831-439c-881d-84d9ca85e455",
+      "name": "04_ROUTE_Text_vs_OCR"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        700,
+        220
+      ],
+      "id": "9e3a5b2e-f591-437e-993f-c51359978625",
+      "name": "05_PARSE_PDF_TextExtract"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "QVff1g7Sdluq3eeN",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        780,
+        600
+      ],
+      "id": "d332de03-904d-4676-b301-2553f83df3a9",
+      "name": "05B_OCR_ImagePDF_TextExtract",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {},
+      "id": "93a60e54-ab9d-4f93-946e-7f2cb1c3b5a8",
+      "name": "06_MERGE_ParseOutputs",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1160,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "Fcl67QR8kg5X9Z9T",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1400,
+        460
+      ],
+      "id": "36a88356-4151-471e-bf20-7d6a0c4b3872",
+      "name": "07_DEDUP_Airtable_Check",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "1219779b-6a4e-4f47-becb-5960d71d2867",
+              "leftValue": "={{ $json.IsDulicated }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1620,
+        460
+      ],
+      "id": "e7ec1d00-d5e1-45da-bef7-9b66b6121acf",
+      "name": "08_IF_Duplicate"
+    },
+    {
+      "parameters": {
+        "jsCode": "// === Helpers ===\nfunction isValidDate(dateString) {\n  if (!dateString) return false;\n  const re = /^\\d{4}-\\d{2}-\\d{2}$/;\n  if (!re.test(dateString)) return false;\n  const d = new Date(dateString);\n  return !isNaN(d);\n}\n\nfunction normalizeFieldName(name) {\n  return name.toLowerCase().replace(/\\s+/g, '');\n}\n\nfunction findFieldValue(data, possibleNames) {\n  const norm = {};\n  for (const k of Object.keys(data)) {\n    norm[normalizeFieldName(k)] = data[k];\n  }\n  for (const name of possibleNames) {\n    const nk = normalizeFieldName(name);\n    if (norm[nk] !== undefined) return norm[nk];\n  }\n  return undefined;\n}\n\n// === Validation config ===\nconst requiredFields = [\n  { name: 'Invoice Number', variations: ['Invoice Number','InvoiceNumber','invoice_number','invoiceNo','invoice_no'] },\n  { name: 'Client Name',   variations: ['Client Name','ClientName','client_name','customerName','customer_name'] },\n  { name: 'Total Amount',  variations: ['Total Amount','TotalAmount','total_amount','amount','total','totalamount'] },\n];\n\nconst dateFields = [\n  { name: 'Invoice Date', variations: ['Invoice Date','InvoiceDate','invoice_date','date','invoicedate'] },\n  { name: 'Due Date',     variations: ['Due Date','DueDate','due_date','duedate'] },\n];\n\n// === Process all incoming items ===\nconst inputItems  = $input.all();\nconst outputItems = [];\n\nfor (let i = 0; i < inputItems.length; i++) {\n  const inItem = inputItems[i];\n\n  try {\n    // Unwrap\n    const data = inItem.json.output\n             || inItem.json.invoiceData\n             || inItem.json.fields\n             || inItem.json;\n\n    // Required fields\n    const missing = [];\n    const found = {};\n    for (const f of requiredFields) {\n      const v = findFieldValue(data, f.variations);\n      if (!v || String(v).trim() === '') missing.push(f.name);\n      else found[f.name] = v;\n    }\n    if (missing.length) throw new Error(`Missing required fields: ${missing.join(', ')}`);\n\n    // Dates\n    for (const f of dateFields) {\n      const v = findFieldValue(data, f.variations);\n      if (v && !isValidDate(String(v).trim())) {\n        throw new Error(`Invalid ${f.name} format (\"${v}\"), expected YYYY-MM-DD`);\n      }\n    }\n\n    // Amount\n    const amt = String(found['Total Amount']).trim();\n    if (amt === '' || isNaN(parseFloat(amt)) || !isFinite(parseFloat(amt))) {\n      throw new Error(`Invalid Total Amount format (\"${found['Total Amount']}\"), expected a number`);\n    }\n\n    // Success\n    outputItems.push({\n      json: {\n        ...inItem.json,           // keep original fields if you want\n        validData: true,\n      },\n      binary: inItem.binary,\n      pairedItem: { item: i },\n    });\n\n  } catch (err) {\n    // Fail this item but keep the batch going (or throw to stop all)\n    outputItems.push({\n      json: {\n        ...inItem.json,\n        error: err.message,\n        validData: false,\n      },\n      binary: inItem.binary,\n      pairedItem: { item: i },\n    });\n  }\n}\n\nreturn outputItems;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1880,
+        460
+      ],
+      "id": "255a99e7-6f4b-4389-9402-d66dffb27fce",
+      "name": "09_VAL_Fields_Format",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appIZztH5j7xxzkqz",
+          "mode": "list",
+          "cachedResultName": "Invoice tracker",
+          "cachedResultUrl": "https://airtable.com/appIZztH5j7xxzkqz"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblZxY1V84w5Rq9CA",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/appIZztH5j7xxzkqz/tblZxY1V84w5Rq9CA"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Invoice Number": "={{ $json.InvoiceNumber }}",
+            "Client Name": "={{ $json.ClientName }}",
+            "Client Address": "={{ $json[\"Client Address\"] }}",
+            "Client Phone": "={{ $json[\"Client Phone\"] }}",
+            "Client Email": "={{ $json[\"Client Email\"] }}",
+            "Total Amount": "={{ $json[\"Total Amount\"] }}",
+            "Invoice Date": "={{ $json[\"Invoice Date\"] }}",
+            "Due Date": "={{ $json[\"Due Date\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Client Name",
+              "displayName": "Client Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Invoice Number",
+              "displayName": "Invoice Number",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Client Email",
+              "displayName": "Client Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Client Address",
+              "displayName": "Client Address",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Client Phone",
+              "displayName": "Client Phone",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Total Amount",
+              "displayName": "Total Amount",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Invoice Date",
+              "displayName": "Invoice Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Due Date",
+              "displayName": "Due Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Attachment Summary",
+              "displayName": "Attachment Summary",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        2120,
+        440
+      ],
+      "id": "f8c92eb3-f183-4989-b9b6-1c83cb5a1e59",
+      "name": "10_DB_Airtable_Create",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "3uyDU5FEE9yIMo3P",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Invoice Number: {{ $json.fields['Invoice Number'] }}\n\nClient Name: {{ $json.fields['Client Name'] }}\n\nClient Email: {{ $json.fields['Client Email'] }}\n\nTotal Amount: {{ $json.fields['Total Amount'] }}\n\nInvoice Date: {{ $json.fields['Invoice Date'] }}\n\nDue Date: {{ $json.fields['Due Date'] }}\n\nActual receipt link: {{ $('01_TRG_GDrive_NewFile').item.json.webContentLink }}"
+            },
+            {
+              "content": "=# Overview\nYou are an email expert for Green Grass Corp named Greenie. You will receive invoice information. Your job is to notify the internal billing team that an invoice was received/sent.\n\n## Email\nInform the billing team of the invoice. Let them know we have also updated this in the Invoice Database, and they can view it here: https://docs.google.com/spreadsheets/d/14FtgVUjy0tw4EQOB2T8wuCYOe6CELtt3UTjn-GsuDWY/edit?gid=0#gid=0\n\n## Output\nOutput the following parameters separately:\nSubject\nEmail",
+              "role": "system"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        2360,
+        440
+      ],
+      "id": "514194fc-2b00-4eee-94ae-ff0867fc56aa",
+      "name": "11_MSG_LLM_EmailGenerate",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "credentials": {
+        "openAiApi": {
+          "id": "eObRBOQuEeU8yp2W",
+          "name": "OpenAi account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "sendTo": "cristianjrojas001@gmail.com",
+        "subject": "={{ $json.message?.content?.Subject || 'Invoice Processing - Subject Generation Failed' }}",
+        "emailType": "text",
+        "message": "={{ $json.message?.content?.Email || 'An invoice was processed but email generation failed. Please check the database for details.' }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2820,
+        400
+      ],
+      "id": "a3725133-2061-4274-8cbb-9b8153b9eabf",
+      "name": "12_MSG_SendEmail_Primary",
+      "webhookId": "da2aa524-25e5-47e2-bd1a-fe7a97edf8a7",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "AgEgA9qcMLW6WfnF",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        3040,
+        400
+      ],
+      "id": "789f2a29-1813-45dc-8e75-9553192d9718",
+      "name": "13_END_Success"
+    },
+    {
+      "parameters": {
+        "sendTo": "billing@example.com",
+        "subject": "={{ $json.message?.content?.Subject || 'Invoice Processing - Subject Generation Failed' }}",
+        "emailType": "text",
+        "message": "={{ $json.message?.content?.Email || 'An invoice was processed but email generation failed. Please check the database for details.' }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2840,
+        820
+      ],
+      "id": "22d17ebe-2e2e-450f-b847-09886c1e2c16",
+      "name": "12B_MSG_SendEmail_Fallback",
+      "webhookId": "da2aa524-25e5-47e2-bd1a-fe7a97edf8a7",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "AgEgA9qcMLW6WfnF",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        3060,
+        820
+      ],
+      "id": "0f28a6e6-c7b9-4867-8cc1-e53264e50ae2",
+      "name": "13B_END_Success_Fallback"
+    },
+    {
+      "parameters": {
+        "errorMessage": "Invoice parser workflow. Deduplication & Idempotency node/call failed"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        840
+      ],
+      "id": "dc1ccce8-60ca-4465-8720-103031f429a3",
+      "name": "ERR_Stop_Main",
+      "retryOnFail": false,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "errorMessage": "Invoice parser workflow. Data Validation node/call failed"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        2080,
+        840
+      ],
+      "id": "a347fb79-7289-4f0a-a358-033669f8e7f2",
+      "name": "ERR_Stop_DBWrite",
+      "retryOnFail": false,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "UrUAGXkaG9BLJkDl",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        920,
+        220
+      ],
+      "id": "21009446-9e18-4ffc-aa91-6ca7688187df",
+      "name": "05.5_PARSE_FieldExtraction_Subflow",
+      "retryOnFail": true,
+      "onError": "continueErrorOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "01_TRG_GDrive_NewFile": {
+      "main": [
+        [
+          {
+            "node": "02_IO_GDrive_DownloadPDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "02_IO_GDrive_DownloadPDF": {
+      "main": [
+        [
+          {
+            "node": "03_VAL_PDF_FileGuard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03_VAL_PDF_FileGuard": {
+      "main": [
+        [
+          {
+            "node": "04_ROUTE_Text_vs_OCR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "04_ROUTE_Text_vs_OCR": {
+      "main": [
+        [
+          {
+            "node": "05_PARSE_PDF_TextExtract",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "05B_OCR_ImagePDF_TextExtract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05_PARSE_PDF_TextExtract": {
+      "main": [
+        [
+          {
+            "node": "05.5_PARSE_FieldExtraction_Subflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05B_OCR_ImagePDF_TextExtract": {
+      "main": [
+        [
+          {
+            "node": "06_MERGE_ParseOutputs",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "06_MERGE_ParseOutputs": {
+      "main": [
+        [
+          {
+            "node": "07_DEDUP_Airtable_Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "07_DEDUP_Airtable_Check": {
+      "main": [
+        [
+          {
+            "node": "08_IF_Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ERR_Stop_Main",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "08_IF_Duplicate": {
+      "main": [
+        [
+          {
+            "node": "09_VAL_Fields_Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "09_VAL_Fields_Format": {
+      "main": [
+        [
+          {
+            "node": "10_DB_Airtable_Create",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ERR_Stop_DBWrite",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10_DB_Airtable_Create": {
+      "main": [
+        [
+          {
+            "node": "11_MSG_LLM_EmailGenerate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11_MSG_LLM_EmailGenerate": {
+      "main": [
+        [
+          {
+            "node": "12_MSG_SendEmail_Primary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "12B_MSG_SendEmail_Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "12_MSG_SendEmail_Primary": {
+      "main": [
+        [
+          {
+            "node": "13_END_Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "12B_MSG_SendEmail_Fallback": {
+      "main": [
+        [
+          {
+            "node": "13B_END_Success_Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05.5_PARSE_FieldExtraction_Subflow": {
+      "main": [
+        [
+          {
+            "node": "06_MERGE_ParseOutputs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "05B_OCR_ImagePDF_TextExtract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "034357ea-9e27-4a6a-8fe2-55361683e9dc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6552087cf0b11b57fb371fc42d904baceb47323a60869dea3c766dca388ef8e2"
+  },
+  "id": "IaAhW7xtvDb06kP8",
+  "tags": []
+}
